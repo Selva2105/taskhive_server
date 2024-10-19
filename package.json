@@ -12,7 +12,7 @@
     "check-types": "tsc --noEmit --pretty",
     "commit": "cz",
     "postinstall": "prisma generate",
-    "db:pull":"prisma db pull",
+    "db:pull": "prisma db pull",
     "db:push": "prisma db push",
     "db:generate": "npx prisma generate",
     "prepare": "node .husky/install.mjs"
