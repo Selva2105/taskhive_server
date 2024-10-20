@@ -27,15 +27,79 @@ enum Permission {
   READ_ONLY
 }
 
+enum ActionType {
+  USER
+  SUBSCRIPTION
+  PROJECT
+  TASK
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum TypeOfCharge {
+  MONTHLY
+  ANNUAL
+}
+
 model User {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  email         String   @unique
-  password      String
-  fullName      String
-  organizations String[] @db.ObjectId
-  roles         Role[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                       String               @id @default(auto()) @map("_id") @db.ObjectId
+  email                    String               @unique
+  password                 String
+  fullName                 String
+  username                 String               @unique
+  stripe_customer_id       String               @unique
+  countryCode              String
+  phoneNumber              String
+  addresses                Address[]
+  bio                      String?
+  settings                 UserSettings?        @relation(fields: [userSettingsId], references: [id])
+  lastLogin                DateTime?
+  emailVerified            Boolean              @default(false)
+  avatar                   String?
+  emailVerificationOTP     String?              @unique
+  emailVerificationExpires DateTime?
+  organizationMembers      OrganizationMember[]
+  ownedOrganizations       Organization[]       @relation("OrganizationOwner")
+  roles                    Role[]
+  UserSubscriptions        UserSubscriptions[]
+  activityLog              ActivityLog[]
+  tasks                    Task[]
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  userSettingsId           String?              @db.ObjectId
+  Payment                  Payment[]
+
+  @@unique([id, stripe_customer_id])
+  @@index([email, lastLogin, username, stripe_customer_id])
+}
+
+model UserSettings {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  theme         Theme   @default(SYSTEM)
+  notifications Boolean @default(true)
+  User          User[]
+}
+
+model Address {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  user       User?   @relation(fields: [userId], references: [id])
+  userId     String? @db.ObjectId
 }
 
 model Role {
@@ -49,28 +113,27 @@ model Role {
 }
 
 model Organization {
-  id             String        @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  ownerId        String        @db.ObjectId
-  members        String[]      @db.ObjectId
-  roles          Role[]
-  projects       Project[]
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  subscriptionId String?       @db.ObjectId
+  id        String               @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  ownerId   String               @db.ObjectId
+  owner     User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  members   OrganizationMember[]
+  roles     Role[]
+  projects  Project[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([name, ownerId, id])
 }
 
-model Subscription {
-  id                   String         @id @default(auto()) @map("_id") @db.ObjectId
-  stripeSubscriptionId String
-  plan                 String
-  startDate            DateTime
-  endDate              DateTime
-  organizationId       String         @db.ObjectId
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  Organization         Organization[]
+model OrganizationMember {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String       @db.ObjectId
+  organizationId String       @db.ObjectId
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([userId, organizationId, id])
 }
 
 model Project {
@@ -81,6 +144,8 @@ model Project {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   Organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([name, organizationId, id])
 }
 
 model Task {
@@ -89,16 +154,87 @@ model Task {
   description  String?
   projectId    String     @db.ObjectId
   assignedToId String?    @db.ObjectId
+  assignedTo   User?      @relation(fields: [assignedToId], references: [id])
   status       TaskStatus @default(PENDING)
   dueDate      DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   Project      Project    @relation(fields: [projectId], references: [id])
+
+  @@index([title, projectId, id, assignedToId, status])
 }
 
-enum TaskStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELED
+model Payment {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId     String    @unique
+  amount        Int
+  currency      String
+  status        String
+  paymentMethod String
+  receiptUrl    String?
+  customerId    String?   @db.ObjectId
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String    @db.ObjectId
+  Customer      Customer? @relation(fields: [customerId], references: [id])
+}
+
+model Customer {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  stripeCustomerId String    @unique
+  email            String    @unique
+  name             String
+  payments         Payment[]
+}
+
+model UserSubscriptions {
+  id                      String        @id @default(auto()) @map("_id") @db.ObjectId
+  user_id                 String        @db.ObjectId
+  user_stripe_customer_id String
+  subscription_id         String        @db.ObjectId
+  registration_date       DateTime      @default(now())
+  type_of_charge          TypeOfCharge
+  cancellation_date       DateTime?
+  expires_at              DateTime?
+  is_active               Boolean       @default(true)
+  user                    User          @relation(fields: [user_id, user_stripe_customer_id], references: [id, stripe_customer_id])
+  subscription            Subscriptions @relation(fields: [subscription_id], references: [id])
+
+  @@map("user_subscriptions")
+}
+
+model Subscriptions {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  price_id_stripe   String              @unique
+  description       String?
+  name              String              @unique
+  price             Float
+  type_of_charge    TypeOfCharge
+  is_active         Boolean             @default(true)
+  coupons           String[]
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  UserSubscriptions UserSubscriptions[]
+
+  @@map("subscriptions")
+}
+
+model ActivityLog {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String     @db.ObjectId
+  action     String
+  details    String?
+  actionType ActionType
+  color      String
+  createdAt  DateTime   @default(now())
+  User       User       @relation(fields: [userId], references: [id])
+
+  @@index([userId, id, actionType])
+}
+
+model RevokedToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  expiresAt DateTime
 }
