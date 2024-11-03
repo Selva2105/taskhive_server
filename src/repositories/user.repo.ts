@@ -1,4 +1,12 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient, User } from '@prisma/client';
+
+type SafeUser = Omit<
+  User,
+  | 'password'
+  | 'emailVerificationOTP'
+  | 'emailVerificationExpires'
+  | 'stripe_customer_id'
+>;
 
 export class UserRepo {
   private prisma: PrismaClient;
@@ -8,10 +16,18 @@ export class UserRepo {
   }
 
   // Find Functions
-  async findUserByEmail(email: string) {
+  async findUserByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
     });
+  }
+
+  async findUserByUsername(username: string): Promise<Boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    return !user;
   }
 
   async findUserById(id: string) {
@@ -27,15 +43,13 @@ export class UserRepo {
   }
 
   // Create Functions
-  async createUser(user: Prisma.UserCreateInput) {
+  async createUser(user: Prisma.UserCreateInput): Promise<SafeUser> {
     return this.prisma.user.create({
       data: {
         ...user,
-        addresses: user.addresses
-          ? {
-              create: user.addresses as Prisma.AddressCreateWithoutUserInput,
-            }
-          : undefined,
+        settings: {
+          create: {},
+        },
       },
       select: {
         id: true,
@@ -44,8 +58,8 @@ export class UserRepo {
         fullName: true,
         countryCode: true,
         phoneNumber: true,
+        companyName: true,
         stripe_customer_id: true,
-        addresses: true,
         createdAt: true,
         updatedAt: true,
         lastLogin: true,
@@ -53,15 +67,100 @@ export class UserRepo {
         emailVerificationExpires: false,
         bio: true,
         password: false,
+        settings: true,
+        activityLog: true,
+        avatar: true,
+        emailVerified: true,
+        userSettingsId: true,
+      },
+    });
+  }
+
+  async getUserFullInfo(id: string): Promise<SafeUser | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        fullName: true,
+        companyName: true,
+        countryCode: true,
+        phoneNumber: true,
+        stripe_customer_id: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLogin: true,
+        emailVerificationOTP: true,
+        emailVerificationExpires: false,
+        bio: true,
+        password: false,
+        settings: true,
+        activityLog: true,
+        avatar: true,
+        emailVerified: true,
+        userSettingsId: true,
+        organizationMembers: true,
+        ownedOrganizations: true,
+        roles: true,
+        tasks: true,
+        UserSubscriptions: true,
       },
     });
   }
 
   // Update Functions
-  async updateUser(id: string, user: Prisma.UserUpdateInput) {
+  async updateUser(
+    id: string,
+    user: Prisma.UserUpdateInput,
+  ): Promise<SafeUser> {
     return this.prisma.user.update({
       where: { id },
       data: user,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        fullName: true,
+        companyName: true,
+        countryCode: true,
+        phoneNumber: true,
+        stripe_customer_id: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLogin: true,
+        emailVerificationOTP: true,
+        emailVerificationExpires: false,
+        bio: true,
+        password: false,
+        settings: true,
+        activityLog: true,
+        avatar: true,
+        emailVerified: true,
+        userSettingsId: true,
+      },
+    });
+  }
+
+  async deleteUser(id: string): Promise<SafeUser | null> {
+    return this.prisma.$transaction(async (prisma) => {
+      // Delete related records first
+      await prisma.activityLog.deleteMany({
+        where: { userId: id },
+      });
+
+      await prisma.userSubscriptions.deleteMany({
+        where: { user_id: id },
+      });
+
+      await prisma.payment.deleteMany({
+        where: { userId: id },
+      });
+
+      // Finally, delete the user
+      return prisma.user.delete({
+        where: { id },
+      });
     });
   }
 }

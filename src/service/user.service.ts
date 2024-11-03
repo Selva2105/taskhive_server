@@ -16,10 +16,7 @@ type SafeUser = Omit<
   | 'password'
   | 'emailVerificationOTP'
   | 'emailVerificationExpires'
-  | 'userSettingsId'
   | 'stripe_customer_id'
-  | 'avatar'
-  | 'emailVerified'
 >;
 
 export class UserService {
@@ -71,16 +68,18 @@ export class UserService {
       stripe_customer_id: stripeCustomerId,
     });
 
-    if (createdUser) {
+    const userInfo = await this.userRepo.findUserById(createdUser.id);
+
+    if (createdUser && userInfo) {
       const mailOptions = {
         from: process.env.ADMIN_MAILID || 'default-email@example.com',
-        to: user.email,
+        to: userInfo.email,
         subject: 'Welcome to Shallbuy',
         html: AccountVerification({
-          frontendUrl: `${process.env.FRONTEND_URL}/verify-user?id=${createdUser.id}`,
-          username: createdUser.username,
-          email: createdUser.email,
-          otp: createdUser.emailVerificationOTP || '',
+          frontendUrl: `${process.env.FRONTEND_URL}/verify/${userInfo.id}`,
+          username: userInfo.username,
+          email: userInfo.email,
+          otp: userInfo.emailVerificationOTP || '',
         }),
       };
       await this.mailService.sendMail(mailOptions);
@@ -88,11 +87,11 @@ export class UserService {
       await this.activityLogService.createActivityLog({
         action: 'CREATE',
         actionType: 'USER',
-        User: { connect: { id: createdUser.id } },
+        User: { connect: { id: userInfo.id } },
         color: '',
       });
 
-      return createdUser;
+      return userInfo;
     }
 
     return null;
@@ -100,10 +99,10 @@ export class UserService {
 
   async loginUser(
     email: string,
-    password: string,
+    userPassword: string,
   ): Promise<{
     token: string;
-    user: User;
+    user: SafeUser;
   }> {
     const existingUser = await this.userRepo.findUserByEmail(email);
 
@@ -112,7 +111,7 @@ export class UserService {
     }
 
     const isPasswordValid = await bcrypt.compare(
-      password,
+      userPassword,
       existingUser.password,
     );
 
@@ -122,17 +121,18 @@ export class UserService {
 
     const token = this.tokenService.signToken(existingUser.id);
 
-    await this.userRepo.updateUser(existingUser.id, {
+    const updatedUser = await this.userRepo.updateUser(existingUser.id, {
       lastLogin: new Date(),
     });
 
-    return { token, user: existingUser };
+    return { token, user: updatedUser };
   }
 
-  async verifyUser(
-    id: string,
-    emailVerificationOTP: string,
-  ): Promise<User | null> {
+  async getUser(id: string): Promise<SafeUser | null> {
+    return this.userRepo.getUserFullInfo(id);
+  }
+
+  async verifyUser(id: string, OTP: string): Promise<SafeUser | null> {
     const user = await this.userRepo.findUserById(id);
 
     if (!user) {
@@ -145,16 +145,24 @@ export class UserService {
       throw new CustomError('Verification token expired', 400);
     }
 
-    if (user.emailVerificationOTP !== emailVerificationOTP) {
+    if (user.emailVerificationOTP !== OTP) {
       throw new CustomError('Invalid verification token', 400);
     }
 
-    await this.userRepo.updateUser(id, {
+    const updatedUser = await this.userRepo.updateUser(id, {
       emailVerified: true,
-      emailVerificationOTP: null,
+      emailVerificationOTP: '',
       emailVerificationExpires: null,
     });
 
-    return user;
+    return updatedUser;
+  }
+
+  async getValidUserName(username: string): Promise<Boolean> {
+    return this.userRepo.findUserByUsername(username);
+  }
+
+  async deleteUser(id: string): Promise<SafeUser | null> {
+    return this.userRepo.deleteUser(id);
   }
 }

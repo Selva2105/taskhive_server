@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import type { Express, NextFunction, Request, Response } from 'express';
 import express from 'express';
@@ -21,6 +22,7 @@ const port = process.env.PORT || 3000;
 async function main() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(cors());
 
   app.use(
     morgan(':method :url :status :res[content-length] - :response-time ms'),

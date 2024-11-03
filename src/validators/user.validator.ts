@@ -20,15 +20,7 @@ const createUserSchema = z.object({
   fullName: z.string().min(1, { message: 'Full name is required' }),
   countryCode: z.string().min(1, { message: 'Country code is required' }),
   phoneNumber: z.string().min(1, { message: 'Phone number is required' }),
-  addresses: z.array(
-    z.object({
-      street: z.string().min(1, { message: 'Street is required' }),
-      city: z.string().min(1, { message: 'City is required' }),
-      state: z.string().min(1, { message: 'State is required' }),
-      postalCode: z.string().min(1, { message: 'Postal code is required' }),
-      country: z.string().min(1, { message: 'Country is required' }),
-    }),
-  ),
+  companyName: z.string().optional(),
 });
 
 export const createUserValidator = validateRequest({

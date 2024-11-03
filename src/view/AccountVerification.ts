@@ -12,8 +12,7 @@ const AccountVerification = ({
   frontendUrl,
 }: AccountVerificationProps) => {
   return `
-    
-    <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -35,23 +34,28 @@ const AccountVerification = ({
             background-color: #ffffff;
         }
         .header {
-            background-color: #FFA000;
+            background-color: #ffffff;
             color: #ffffff;
-            padding: 20px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 20px;
             text-align: center;
         }
         .content {
-            padding: 30px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 20px;
         }
         .button {
             display: inline-block;
             padding: 12px 24px;
             background-color: #FFA000;
-            color: #ffffff;
+            color: black !important;
             text-decoration: none;
             border-radius: 25px;
             font-weight: bold;
             text-align: center;
+            cursor: pointer;
         }
         .feature {
             margin-bottom: 20px;
@@ -97,12 +101,15 @@ const AccountVerification = ({
             <td>
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                        <td class="header">
-                          <div class="logo-container">
-                                <img src="https://firebasestorage.googleapis.com/v0/b/ikart-40b39.appspot.com/o/taskhive%2Flogos%2Flogo-mbl.jpg?alt=media&token=daeb011c-28ac-493e-9c6d-0520ed3ea827" alt="TaskHive Logo" class="logo">
-                                <h1 style="margin: 0; font-size: 24px;color: #FFA000;">TaskHive</h1>
-                            </div>
-                            <h1 style="margin: 0; font-size: 28px; background-color: white; color: #FFA000;">Welcome to Taskhive</h1>
+                        <td class="header" align="center">
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td>
+                                        <img src="https://firebasestorage.googleapis.com/v0/b/ikart-40b39.appspot.com/o/taskhive%2Flogos%2Flogo-mbl.jpg?alt=media&token=daeb011c-28ac-493e-9c6d-0520ed3ea827" alt="TaskHive Logo" class="logo">
+                                    </td>
+                                    <td class="logo-text"<h1 style="margin: 0; font-size: 24px;color: #FFA000;">TaskHive</h1></td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
@@ -125,7 +132,7 @@ const AccountVerification = ({
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="${frontendUrl}/verify}" class="button">Buzz Into Your Account</a>
+                                        <a href="${frontendUrl}" class="button">Buzz Into Your Account</a>
                                     </td>
                                 </tr>
                             </table>
@@ -193,12 +200,12 @@ const AccountVerification = ({
                             <p style="margin: 0;">© 2024 Taskhive. All rights reserved.</p>
                             <p style="margin: 10px 0 0 0;">123 Honeycomb Lane, Beehive City, HC 98765</p>
                             <p style="margin: 10px 0 0 0;">
-                                <a href="https://taskhive.com/unsubscribe">Unsubscribe</a> | 
-                                <a href="https://taskhive.com/privacy">Privacy Policy</a>
+                                <a style="color: #ffffff;" href="https://taskhive.com/unsubscribe">Unsubscribe</a> | 
+                                <a style="color: #ffffff;" href="https://taskhive.com/privacy">Privacy Policy</a>
                             </p>
                             <p style="margin: 20px 0 0 0; font-size: 12px; color: #FFE082;">
-                                This email was sent to <a href="mailto:${email}">${email}</a>. If you'd rather
-                                not receive this kind of email, you can <a href="https://taskhive.com/unsubscribe">unsubscribe</a> or <a href="https://taskhive.com/email-preferences">manage your email
+                                This email was sent to <a style="color: #eab308;" href="mailto:${email}">${email}</a>. If you'd rather
+                                not receive this kind of email, you can <a style="color: #ffffff;" href="https://taskhive.com/unsubscribe">unsubscribe</a> or <a style="color: #ffffff;" href="https://taskhive.com/email-preferences">manage your email
                                 preferences</a>.
                             </p>
                         </td>
@@ -209,7 +216,6 @@ const AccountVerification = ({
     </table>
     </body>
     </html>
-
     `;
 };
 

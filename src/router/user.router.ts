@@ -31,11 +31,18 @@ const userService = new UserService(
 );
 const userController = new UserController(userService);
 
+// GET ROUTES
+userRouter.get('/validate/:username', userController.getValidUserName);
+userRouter.get('/:id', userController.getUser);
+
 // POST ROUTES
 userRouter.post('/create', createUserValidator, userController.createUser);
 userRouter.post('/login', userController.loginUser);
 
 // PATCH ROUTES
 userRouter.patch('/verify-email', userController.verifyEmail);
+
+// DELETE ROUTES
+userRouter.delete('/delete/:id', userController.deleteUser);
 
 export default userRouter;
